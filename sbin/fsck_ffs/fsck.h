@@ -71,6 +71,10 @@
 
 #include <sys/queue.h>
 
+#ifdef WITH_CASPER
+#include <libcasper.h>
+#endif
+
 #define	MAXDUP		10	/* limit on dup blks (per inode) */
 #define	MAXBAD		10	/* limit on bad blks (per inode) */
 #define	MINBUFS		10	/* minimum number of buffers required */
@@ -290,6 +294,7 @@ extern long dirhash, inplast;
 extern unsigned long numdirs, listmax;
 extern long countdirs;		/* number of directories we actually found */
 
+extern cap_channel_t *capsysctl;
 #define MIBSIZE	3		/* size of fsck sysctl MIBs */
 extern int	adjrefcnt[MIBSIZE];	/* MIB command to adjust inode reference cnt */
 extern int	adjblkcnt[MIBSIZE];	/* MIB command to adjust inode block count */

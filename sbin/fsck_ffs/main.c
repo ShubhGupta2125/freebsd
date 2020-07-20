@@ -45,6 +45,7 @@ __FBSDID("$FreeBSD$");
 
 #define	IN_RTLD			/* So we pickup the P_OSREL defines */
 #include <sys/param.h>
+#include <sys/capsicum.h>
 #include <sys/file.h>
 #include <sys/mount.h>
 #include <sys/resource.h>

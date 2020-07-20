@@ -1,6 +1,8 @@
 # $FreeBSD$
 #	@(#)Makefile	8.2 (Berkeley) 4/27/95
 
+.include <src.opts.mk>
+
 PACKAGE=runtime
 PROG=	fsck_ffs
 LINKS+=	${BINDIR}/fsck_ffs ${BINDIR}/fsck_ufs
@@ -13,6 +15,12 @@ SRCS=	dir.c ea.c fsutil.c inode.c main.c pass1.c pass1b.c pass2.c pass3.c \
 LIBADD=	ufs
 WARNS?=	2
 CFLAGS+= -I${.CURDIR} -I${.CURDIR:H}/mount
+
+.if ${MK_CASPER} != "no"
+LIBADD+=	casper
+LIBADD+=	cap_sysctl
+CFLAGS+=-DWITH_CASPER -Dg
+.endif
 
 .PATH:	${SRCTOP}/sys/ufs/ffs ${.CURDIR:H}/mount
 

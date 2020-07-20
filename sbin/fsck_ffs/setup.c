@@ -38,6 +38,7 @@ static const char sccsid[] = "@(#)setup.c	8.10 (Berkeley) 5/9/95";
 __FBSDID("$FreeBSD$");
 
 #include <sys/param.h>
+#include<sys/capsicum.h>
 #include <sys/disk.h>
 #include <sys/stat.h>
 #define FSTYPENAMES
@@ -58,6 +59,10 @@ __FBSDID("$FreeBSD$");
 
 #include "fsck.h"
 
+#ifdef WITH_CASPER
+#include <casper/cap_sysctl.h>
+#endif
+
 struct inoinfo **inphead, **inpsort;
 
 struct uufsd disk;
@@ -68,6 +73,7 @@ struct bufarea asblk;
 static int calcsb(char *dev, int devfd, struct fs *fs);
 static void saverecovery(int readfd, int writefd);
 static int chkrecovery(int devfd);
+static void cap_open();
 
 /*
  * Read in a superblock finding an alternate if necessary.
@@ -173,6 +179,7 @@ setup(char *dev)
 	}
 	if (preen == 0)
 		printf("** %s", dev);
+
 	if (bkgrdflag == 0 &&
 	    (nflag || ufs_disk_write(&disk) < 0 ||
 	     (fswritefd = dup(disk.d_fd)) < 0)) {
@@ -181,6 +188,9 @@ setup(char *dev)
 			pfatal("NO WRITE ACCESS");
 		printf(" (NO WRITE)");
 	}
+
+	cap_open();
+
 	if (preen == 0)
 		printf("\n");
 	/*
@@ -565,4 +575,40 @@ saverecovery(int readfd, int writefd)
 	fsr->fsr_ncg = sblock.fs_ncg;
 	blwrite(writefd, fsrbuf, (SBLOCK_UFS2 - secsize) / secsize, secsize);
 	free(fsrbuf);
+}
+
+void cap_open()
+{
+	cap_channel_t *capcas, *capsysctl;
+	//const char	*name =	"kern.trap_enotcap";
+	//void *limit;
+	// int value;
+	// size_t size;
+	/*	Open capability	to Casper. */
+     capcas = cap_init();
+     if	(capcas	== NULL)
+	     err(1, "Unable to contact Casper");
+
+     /*	Enter capability mode sandbox. */
+     if	(cap_enter() < 0 && errno != ENOSYS)
+	     err(1, "Unable to enter capability	mode");
+
+     /*	Use Casper capability to create	capability to the system.sysctl	service. */
+     capsysctl = cap_service_open(capcas, "system.sysctl");
+     if	(capsysctl == NULL)
+	     err(1, "Unable to open system.sysctl service");
+
+     /*	Close Casper capability, we don't need it anymore. */
+     cap_close(capcas);
+
+     // /*	Create limit for one MIB with read access only.	*/
+     // limit = cap_sysctl_limit_init(capsysctl);
+     // (void)cap_sysctl_limit_name(limit,	name, CAP_SYSCTL_READ);
+
+     // /*	Limit system.sysctl. */
+     // if	(cap_sysctl_limit(limit) < 0)
+	    //  err(1, "Unable to set cap_sysctl limits");
+
+	 return;
+
 }
