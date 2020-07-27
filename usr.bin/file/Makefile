@@ -20,6 +20,8 @@
 #    ever read sources, credits must appear in the documentation.
 # 4. This notice may not be removed or altered.
 
+.include <src.opts.mk>
+
 SRCDIR=	${SRCTOP}/contrib/file
 .PATH: ${SRCDIR}/src
 .PATH: ${SRCDIR}/doc
@@ -28,7 +30,7 @@ PROG=	file
 
 MAGICPATH?=	/usr/share/misc
 
-CFLAGS+= -DMAGIC='"${MAGICPATH}/magic"' -DHAVE_CONFIG_H -DHAVE_CAPSICUM -g
+CFLAGS+= -DMAGIC='"${MAGICPATH}/magic"' -DHAVE_CONFIG_H -DHAVE_CAPSICUM -g -O0 
 CFLAGS+= -I${SRCTOP}/lib/libmagic
 
 LIBADD=	magic
@@ -37,6 +39,12 @@ FILEVER!= awk '$$1 == "\#define" && $$2 == "VERSION" { print $$3; exit }' \
 			${SRCTOP}/lib/libmagic/config.h
 
 CLEANFILES+=	${MAN}
+
+.if ${MK_CASPER} != "no"
+LIBADD+=	casper
+LIBADD+=	cap_fileargs
+CFLAGS+=	-DWITH_CASPER
+.endif 
 
 .include <bsd.prog.mk>
 
