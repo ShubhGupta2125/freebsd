@@ -28,7 +28,7 @@ PROG=	file
 
 MAGICPATH?=	/usr/share/misc
 
-CFLAGS+= -DMAGIC='"${MAGICPATH}/magic"' -DHAVE_CONFIG_H
+CFLAGS+= -DMAGIC='"${MAGICPATH}/magic"' -DHAVE_CONFIG_H -DHAVE_CAPSICUM -g
 CFLAGS+= -I${SRCTOP}/lib/libmagic
 
 LIBADD=	magic

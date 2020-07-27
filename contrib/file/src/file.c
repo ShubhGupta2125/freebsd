@@ -57,6 +57,12 @@ FILE_RCSID("@(#)$File: file.c,v 1.187 2020/06/07 17:38:30 christos Exp $")
 #ifdef HAVE_WCHAR_H
 #include <wchar.h>
 #endif
+#ifdef HAVE_CAPSICUM
+#include <libcasper.h>
+#include <casper/cap_fileargs.h>
+#include <capsicum_helpers.h>
+#endif
+#include <err.h>
 
 #if defined(HAVE_GETOPT_H) && defined(HAVE_STRUCT_OPTION)
 # include <getopt.h>
@@ -171,6 +177,9 @@ private int process(struct magic_set *ms, const char *, int);
 private struct magic_set *load(const char *, int);
 private void setparam(const char *);
 private void applyparam(magic_t);
+#ifdef HAVE_CAPSICUM
+	fileargs_t *fa;
+#endif
 
 
 /*
@@ -190,7 +199,15 @@ main(int argc, char *argv[])
 	int longindex;
 	const char *magicfile = NULL;		/* where the magic is	*/
 	char *progname;
+#ifdef HAVE_CAPSICUM
+	cap_rights_t rights, *rights_init;
+#endif
 
+#ifdef HAVE_CAPSICUM
+	rights_init = cap_rights_init(&rights, CAP_READ, CAP_FSTAT, CAP_SEEK);
+	fa = fileargs_init(argc, argv, O_RDONLY|O_BINARY|O_NONBLOCK, 0, 
+		rights_init, FA_OPEN | FA_LSTAT);
+#endif
 	/* makes islower etc work for other langs */
 	(void)setlocale(LC_CTYPE, "");
 
@@ -267,6 +284,11 @@ main(int argc, char *argv[])
 				if ((magic = load(magicfile, flags)) == NULL)
 					return 1;
 			applyparam(magic);
+#ifdef HAVE_CAPSICUM
+			if (caph_enter_casper() < 0) {
+				err(1, "unable to enter capability	mode");
+			}
+#endif
 			e |= unwrap(magic, optarg);
 			++didsomefiles;
 			break;
@@ -403,6 +425,10 @@ main(int argc, char *argv[])
 		applyparam(magic);
 	}
 
+	if(!cap_sandboxed() && caph_enter_casper() < 0){
+		err(1, "unable to enter capability	mode");
+	}
+
 	if (optind == argc) {
 		if (!didsomefiles)
 			usage();
@@ -427,6 +453,9 @@ main(int argc, char *argv[])
 	}
 
 out:
+#ifdef HAVE_CAPSICUM
+	fileargs_free(fa);
+#endif
 	if (magic)
 		magic_close(magic);
 	return e;
@@ -503,7 +532,7 @@ unwrap(struct magic_set *ms, const char *fn)
 		f = stdin;
 		wid = 1;
 	} else {
-		if ((f = fopen(fn, "r")) == NULL) {
+		if ((f = fileargs_fopen(fa, fn, "r")) == NULL) {
 			file_warn("Cannot open `%s'", fn);
 			return 1;
 		}

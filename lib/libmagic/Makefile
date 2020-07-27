@@ -1,6 +1,8 @@
 # $FreeBSD$
 # Copyright (c) David E. O'Brien, 2000-2004, 2006, 2009
 
+.include <src.opts.mk>
+
 PACKAGE=lib${LIB}
 CONTRDIR=	${SRCTOP}/contrib/file
 .PATH: ${CONTRDIR}
@@ -22,7 +24,7 @@ INCS=	magic.h
 
 MAGICPATH?=	/usr/share/misc
 
-CFLAGS+= -DMAGIC='"${MAGICPATH}/magic"' -DHAVE_CONFIG_H
+CFLAGS+= -DMAGIC='"${MAGICPATH}/magic"' -DHAVE_CONFIG_H -DHAVE_CAPSICUM -g
 CFLAGS+= -I${.CURDIR} -I${.OBJDIR} -I${CONTRDIR}/src
 
 WARNS?=		3
@@ -90,3 +92,9 @@ FILES+=			libmagic.pc
 FILESDIR_libmagic.pc=	${LIBDATADIR}/pkgconfig
 
 .include <bsd.lib.mk>
+
+.if ${MK_CASPER} != "no"
+LIBADD+=	casper
+LIBADD+=	cap_fileargs
+CFLAGS+=	-DWITH_CASPER
+.endif

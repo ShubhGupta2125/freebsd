@@ -89,6 +89,11 @@
 #include <sys/stat.h>
 #include <stdarg.h>
 
+#ifdef HAVE_CAPSICUM
+#include <libcasper.h>
+#include <casper/cap_fileargs.h>
+#endif
+
 #define ENABLE_CONDITIONALS
 
 #ifndef MAGIC
@@ -580,6 +585,10 @@ protected char  *file_pop_buffer(struct magic_set *, file_pushbuf_t *);
 #ifndef COMPILE_ONLY
 extern const char *file_names[];
 extern const size_t file_nnames;
+#endif
+
+#ifdef HAVE_CAPSICUM
+extern fileargs_t *fa;
 #endif
 
 #ifndef HAVE_PREAD

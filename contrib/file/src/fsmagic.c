@@ -113,6 +113,9 @@ file_fsmagic(struct magic_set *ms, const char *fn, struct stat *sb)
 	ssize_t nch;
 	struct stat tstatbuf;
 #endif
+#ifdef HAVE_CAPSICUM
+	int fd;
+#endif
 
 	if (fn == NULL)
 		return 0;
@@ -122,12 +125,22 @@ file_fsmagic(struct magic_set *ms, const char *fn, struct stat *sb)
 	 * Fstat is cheaper but fails for files you don't have read perms on.
 	 * On 4.2BSD and similar systems, use lstat() to identify symlinks.
 	 */
-#ifdef	S_IFLNK
+#if defined(S_IFLNK) && defined(HAVE_CAPSICUM)
+	fd = fileargs_open(fa, fn);
+	if ((ms->flags & MAGIC_SYMLINK) == 0)
+		ret = fileargs_lstat(fa, fn, sb);
+	else
+		ret = fstat(fd, sb);
+
+#elif defined(S_IFLINK) && !defined(HAVE_CAPSICUM)
 	if ((ms->flags & MAGIC_SYMLINK) == 0)
 		ret = lstat(fn, sb);
 	else
+		ret = stat(fn, sb);
+#elif !defined(S_IFLINK) && defined(HAVE_CAPSICUM)
+	fd = fileargs_open(fa, fn);
+	ret = fstat(fd, sb);
 #endif
-	ret = stat(fn, sb);	/* don't merge into if; see "ret =" above */
 
 #ifdef WIN32
 	{
