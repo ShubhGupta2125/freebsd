@@ -436,9 +436,13 @@ file_or_fd(struct magic_set *ms, const char *inname, int fd)
 		_setmode(STDIN_FILENO, O_BINARY);
 #endif
 	if (inname != NULL) {
-		int flags = O_RDONLY|O_BINARY|O_NONBLOCK;
 		errno = 0;
+#ifdef HAVE_CAPSICUM
+		if ((fd = fileargs_open(fa, inname)) < 0) {
+#else
+		int flags = O_RDONLY|O_BINARY|O_NONBLOCK;
 		if ((fd = open(inname, flags)) < 0) {
+#endif
 			okstat = stat(inname, &sb) == 0;
 			if (okstat && S_ISFIFO(sb.st_mode))
 				ispipe = 1;

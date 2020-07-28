@@ -140,6 +140,8 @@ file_fsmagic(struct magic_set *ms, const char *fn, struct stat *sb)
 #elif !defined(S_IFLINK) && defined(HAVE_CAPSICUM)
 	fd = fileargs_open(fa, fn);
 	ret = fstat(fd, sb);
+#else
+	ret = stat(fn, sb);
 #endif
 
 #ifdef WIN32

@@ -204,7 +204,8 @@ main(int argc, char *argv[])
 #endif
 
 #ifdef HAVE_CAPSICUM
-	rights_init = cap_rights_init(&rights, CAP_READ, CAP_FSTAT, CAP_SEEK);
+	caph_cache_catpages();
+	rights_init = cap_rights_init(&rights, CAP_READ, CAP_FSTAT, CAP_SEEK, CAP_FCNTL);
 	fa = fileargs_init(argc, argv, O_RDONLY|O_BINARY|O_NONBLOCK, 0, 
 		rights_init, FA_OPEN | FA_LSTAT);
 #endif
@@ -425,7 +426,7 @@ main(int argc, char *argv[])
 		applyparam(magic);
 	}
 
-	if(!cap_sandboxed() && caph_enter_casper() < 0){
+	if (!cap_sandboxed() && caph_enter_casper() < 0) {
 		err(1, "unable to enter capability	mode");
 	}
 
@@ -532,7 +533,11 @@ unwrap(struct magic_set *ms, const char *fn)
 		f = stdin;
 		wid = 1;
 	} else {
+#ifdef HAVE_CAPSICUM
 		if ((f = fileargs_fopen(fa, fn, "r")) == NULL) {
+#else
+		if ((f = fopen(fn, "r")) == NULL) {
+#endif
 			file_warn("Cannot open `%s'", fn);
 			return 1;
 		}
